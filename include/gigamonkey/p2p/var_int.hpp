@@ -6,6 +6,7 @@
 #define GIGAMONKEY_VAR_INT_H
 #include <data/iterable.hpp>
 #include <data/encoding/endian.hpp>
+#include <ostream>
 
 namespace Gigamonkey::p2p {
     /**
@@ -66,6 +67,51 @@ namespace Gigamonkey::p2p {
          * @return uint64 containing the value of the VarInt
          */
         explicit operator uint64_t() const;
+
+        /**
+         * Equality operator
+         * @param rhs VarInt to check if equals
+         * @return true if equals false otherwise
+         */
+        bool operator==(const VarInt &rhs) const;
+
+        /**
+         * Inequality operator
+         * @param rhs VarInt to check if different
+         * @return false if equals true otherwise
+         */
+        bool operator!=(const VarInt &rhs) const;
+
+        /**
+         * Less than operator
+         * @param rhs VarInt to check if less than
+         * @return true of less then rhs false otherwise
+         */
+        bool operator<(const VarInt &rhs) const;
+
+        /**
+         * Greater than operator
+         * @param rhs VarInt to check if greater than
+         * @return true of greater then rhs false otherwise
+         */
+        bool operator>(const VarInt &rhs) const;
+
+        /**
+         * Less than or equal operator
+         * @param rhs VarInt to check if less or equal than
+         * @return true if less then  or equal to rhs false otherwise
+         */
+        bool operator<=(const VarInt &rhs) const;
+
+        /**
+         * Greater than or equal operator
+         * @param rhs VarInt to check if greater or equal than
+         * @return true if greater then  or equal to rhs false otherwise
+         */
+        bool operator>=(const VarInt &rhs) const;
+
+        friend std::ostream &operator<<(std::ostream &os, const VarInt &anInt);
+
     private:
         data::uint64_little value;
 

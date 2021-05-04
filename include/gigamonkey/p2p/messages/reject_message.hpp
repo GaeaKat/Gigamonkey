@@ -33,6 +33,73 @@ namespace Gigamonkey::p2p::messages {
         inline std::string getCommandName() override {
             return "reject";
         }
+        /**
+         * Gets the message type being rejected
+         * @return name of the message not padded to 12 bytes
+         */
+        [[nodiscard]] std::string getMessage() const {
+            return (std::string) message;
+        }
+
+        /**
+         * Sets the message type being rejected
+         * @param msg name of the message not padded to 12 bytes
+         */
+        void setMessage(std::string msg) {
+            message=VarString(msg);
+            buildBody();
+        }
+
+        /**
+         * Gets the rejection code
+         * @return rejection code
+         */
+        [[nodiscard]] data::byte getCode() const {
+            return code;
+        }
+
+        /**
+         * Sets the rejection code
+         * @param cde rejection code
+         */
+        void setCode(data::byte cde) {
+            code=cde;
+            buildBody();
+        }
+
+        /**
+         * Gets the rejection reason
+         * @return reason the messasge is rejected
+         */
+        std::string getReason() const {
+            return (std::string) reason;
+        }
+
+        /**
+         * Sets the rejection reason
+         * @param rson reason the messasge is rejected
+         */
+        void setReason(std::string rson) {
+            reason=VarString(rson);
+            buildBody();
+        }
+
+        /**
+         * Gets the extra data
+         * @return extra data
+         */
+        data::bytes getExtra() const {
+            return extra;
+        }
+
+        /**
+         * Sets the extra data
+         * @param xtra extra data
+         */
+        void setExtra(data::bytes xtra) {
+            extra=xtra;
+            buildBody();
+        }
 
     protected:
         void buildBody() override;

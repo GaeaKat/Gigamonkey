@@ -13,25 +13,29 @@
 #include <gigamonkey/p2p/messages/version_message.hpp>
 #include <gigamonkey/p2p/messages/message.hpp>
 #include <gigamonkey/work/string.hpp>
-
+#include <boost/log/utility/setup/console.hpp>
 namespace Gigamonkey::p2p {
 
     void tmp(boost::system::error_code ec) {
-        std::cout << "Got here too" << std::endl;
+        DATA_LOG(normal) << "Got here too";
         if(ec.failed()) {
-            std::cout << "Failed to Connect" << std::endl;
+            DATA_LOG(error) << "Failed to Connect";
         }
     }
     TEST(NodeTest, QuerySeeds) {
         data::log::init_logging("node_%0.log");
+        boost::log::add_console_log(std::cout, boost::log::keywords::format = "[%TimeStamp%] [%Channel%] [%Severity%]: %Message%", boost::log::keywords::auto_flush = true);
         Networks::TestNet network;
+        DATA_LOG(normal) << "Test logging";
         Node node(network);
         auto output=node.QuerySeeds();
-        std::cout << output[0] << std::endl;
-        boost::asio::io_context io_context;
-        NodeConnection test(io_context,boost::asio::ip::tcp::endpoint(output[0],network.port()),node);
-        test.connect([](boost::system::error_code ec){tmp(ec);});
-        io_context.run();
+        if(output.size()>0) {
+            std::cout << output[0] << std::endl;
+            boost::asio::io_context io_context;
+            NodeConnection test(io_context, boost::asio::ip::tcp::endpoint(output[0], network.port()), node);
+            test.connect([](boost::system::error_code ec) { tmp(ec); });
 
+            io_context.run();
+        }
     }
 }

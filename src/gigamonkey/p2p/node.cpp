@@ -4,6 +4,7 @@
 
 #include <gigamonkey/p2p/node.hpp>
 #include <script/script.h>
+#include <data/log/log.hpp>
 
 namespace Gigamonkey::p2p {
 
@@ -17,7 +18,7 @@ namespace Gigamonkey::p2p {
             boost::asio::ip::tcp::resolver::query resolver_query(host,std::to_string(network.port()), boost::asio::ip::tcp::resolver::query::numeric_service);
             boost::asio::ip::tcp::resolver::iterator it =resolver.resolve(resolver_query, ec);
             if(ec.failed()) {
-                std::cout << "Failed to resolve a DNS name."
+                DATA_LOG_CHANNEL("network",error) << "Failed to resolve a DNS name."
                           << "Error code = " << ec.value()
                           << ". Message = " << ec.message();
             }

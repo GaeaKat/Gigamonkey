@@ -49,6 +49,11 @@ namespace Gigamonkey::p2p {
         void network_loop();
 
         /**
+         * Handles the messages
+         */
+        void handler_loop();
+
+        /**
          * Handles pasrsing header from the stream.
          * @param ec Error code
          */

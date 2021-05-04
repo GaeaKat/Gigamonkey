@@ -84,5 +84,34 @@ namespace Gigamonkey::p2p {
         return value;
     }
 
+    bool VarInt::operator==(const VarInt &rhs) const {
+        return value == rhs.value;
+    }
+
+    bool VarInt::operator!=(const VarInt &rhs) const {
+        return !(rhs == *this);
+    }
+
+    bool VarInt::operator<(const VarInt &rhs) const {
+        return value < rhs.value;
+    }
+
+    bool VarInt::operator>(const VarInt &rhs) const {
+        return rhs < *this;
+    }
+
+    bool VarInt::operator<=(const VarInt &rhs) const {
+        return !(rhs < *this);
+    }
+
+    bool VarInt::operator>=(const VarInt &rhs) const {
+        return !(*this < rhs);
+    }
+
+    std::ostream &operator<<(std::ostream &os, const VarInt &anInt) {
+        os << "value: " << anInt.value;
+        return os;
+    }
+
 
 }

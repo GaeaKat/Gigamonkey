@@ -30,7 +30,7 @@ namespace Gigamonkey::p2p::messages {
     }
 
     std::ostream &operator<<(std::ostream &os, const Message &message) {
-        os << "header: " << message.header << " body: " << message.body;
+        os << "header: " << *(message.header) << " body: " << *(message.body);
         return os;
     }
 }
