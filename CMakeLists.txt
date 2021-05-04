@@ -52,27 +52,7 @@ endif()
 
 # Include libraries
 
-# Boost settings
-set(Boost_LIB_PREFIX            "lib"       CACHE STRING "")
-set(Boost_USE_MULTITHREADED     ON          CACHE BOOL "") # '-mt' flag
-set(Boost_USE_STATIC_LIBS       ON          CACHE BOOL "")
-set(Boost_USE_STATIC_RUNTIME    OFF         CACHE BOOL "") # '-s' tag
-set(Boost_USE_DEBUG_RUNTIME     OFF         CACHE BOOL "") # '-g' tag
-set(Boost_COMPILER              "-mgw49"    CACHE STRING "")
 
-# Include Boost
-find_package(Boost 1.72.0 COMPONENTS system locale  REQUIRED)
-
-if(Boost_FOUND)
-
-    message(STATUS "Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}")
-    message(STATUS "Boost_LIBRARIES: ${Boost_LIBRARIES}")
-    message(STATUS "Boost_VERSION: ${Boost_VERSION}")
-
-    include_directories(${Boost_INCLUDE_DIRS})
-    add_definitions("-DHAS_BOOST")
-
-endif()
 
 #find_package(ICU 60.2 COMPONENTS uc i18n REQUIRED)
 find_package(OpenSSL REQUIRED)
@@ -100,6 +80,28 @@ endif()
 message("-- Root Dir of ${CHAIN_NAME}: ${CHAIN_SRC_ROOT} (-DCHAIN_SRC_ROOT=${CHAIN_SRC_ROOT})")
 if (NOT EXISTS "${CHAIN_SRC_ROOT}/src/version.h")
 	message(FATAL_ERROR "The source code of bitcoin SV does not exist!")
+endif()
+
+# Boost settings
+set(Boost_LIB_PREFIX            "lib"       CACHE STRING "")
+set(Boost_USE_MULTITHREADED     ON          CACHE BOOL "") # '-mt' flag
+set(Boost_USE_STATIC_LIBS       ON          CACHE BOOL "")
+set(Boost_USE_STATIC_RUNTIME    OFF         CACHE BOOL "") # '-s' tag
+set(Boost_USE_DEBUG_RUNTIME     OFF         CACHE BOOL "") # '-g' tag
+set(Boost_COMPILER              "-mgw49"    CACHE STRING "")
+
+# Include Boost
+find_package(Boost 1.76.0 COMPONENTS system locale log log_setup regex REQUIRED)
+
+if(Boost_FOUND)
+
+	message(STATUS "Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}")
+	message(STATUS "Boost_LIBRARIES: ${Boost_LIBRARIES}")
+	message(STATUS "Boost_VERSION: ${Boost_VERSION}")
+
+	include_directories(${Boost_INCLUDE_DIRS})
+	add_definitions("-DHAS_BOOST")
+
 endif()
 
 ## Enable testing
@@ -149,8 +151,19 @@ add_library(gigamonkey STATIC
     src/gigamonkey/boost/boost.cpp
     src/gigamonkey/mapi/mapi.cpp
     src/gigamonkey/mapi/envelope.cpp
+	src/gigamonkey/p2p/node.cpp
+	src/gigamonkey/p2p/node_connection.cpp
+	src/gigamonkey/p2p/var_int.cpp
+	src/gigamonkey/p2p/var_string.cpp
+	src/gigamonkey/p2p/network_params.cpp
+	src/gigamonkey/p2p/messages/message_header.cpp
+	src/gigamonkey/p2p/messages/message_body.cpp
+	src/gigamonkey/p2p/messages/message.cpp
+	src/gigamonkey/p2p/messages/version_message.cpp
+	src/gigamonkey/p2p/messages/reject_message.cpp
 )
 
+message("Boost Libraries at end: ${Boost_LIBRARIES}")
 target_link_libraries(gigamonkey PUBLIC data common util bitcoinconsensus ${LIB_BITCOIN_LIBRARIES} ${OPENSSL_LIBRARIES} ${CRYPTOPP_LIBRARIES} ${Boost_LIBRARIES} ${GMPXX_LIBRARY} ${GMP_LIBRARY} nlohmann_json::nlohmann_json )
 
 target_include_directories(gigamonkey PUBLIC include)
