@@ -6,6 +6,7 @@
 #define GIGAMONKEY_MESSAGE_HPP
 
 #include <ostream>
+#include <utility>
 #include "message_header.hpp"
 #include "message_body.hpp"
 
@@ -57,11 +58,17 @@ namespace Gigamonkey::p2p::messages {
          */
         MessageBodyPtr getBody() { return body;};
 
-        void setHeader(MessageHeadPtr head) { header=head;}
+        void setHeader(MessageHeadPtr head) { header=std::move(head);}
 
-        void setBody(MessageBodyPtr bdy) { body=bdy;}
+        void setBody(MessageBodyPtr bdy) { body=std::move(bdy);}
 
         friend std::ostream &operator<<(std::ostream &os, const Message &message);
+
+        /**
+         * Instantiates the appropriate body type as per the header and returns it
+         * @return Instantiated Message body
+         */
+        messages::MessageBodyPtr makeBody(data::bytes incoming_body,NetworkParams& params);
 
     private:
         MessageHeadPtr header;

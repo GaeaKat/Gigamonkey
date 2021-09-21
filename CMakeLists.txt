@@ -163,6 +163,9 @@ add_library(gigamonkey STATIC
 	src/gigamonkey/p2p/messages/reject_message.cpp
 	src/gigamonkey/p2p/messages/ping_pong_message.cpp
 	src/gigamonkey/p2p/messages/protoconf_message.cpp
+	src/gigamonkey/p2p/messages/address_message.cpp
+	src/gigamonkey/p2p/messages/addressv2_message.cpp
+	src/gigamonkey/p2p/messages/network_address.cpp
 )
 
 message("Boost Libraries at end: ${Boost_LIBRARIES}")

@@ -102,5 +102,6 @@ namespace Gigamonkey::p2p::messages {
     };
 
     typedef boost::shared_ptr<MessageBody> MessageBodyPtr;
+    typedef boost::shared_ptr<EmptyBody> EmptyBodyPtr;
 }
 #endif //GIGAMONKEY_MESSAGE_BODY_HPP

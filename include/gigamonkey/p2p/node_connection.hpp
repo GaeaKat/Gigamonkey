@@ -9,12 +9,13 @@
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/function.hpp>
-#include <gigamonkey/p2p/node.hpp>
+
 #include <gigamonkey/p2p/messages/message.hpp>
 #include <data/tools.hpp>
 #include <queue>
 
 namespace Gigamonkey::p2p {
+class Node;
     /**
      * Connection to an external node
      */
@@ -28,7 +29,7 @@ namespace Gigamonkey::p2p {
          * @param mEp Endpoint to connect to.
          * @param nod Parent node
          */
-        NodeConnection(boost::asio::io_context &ioContext, boost::asio::ip::tcp::endpoint mEp, Node& nod);
+        NodeConnection(boost::asio::io_context &ioContext, boost::asio::ip::tcp::endpoint mEp, Node* nod);
 
         /**
          * connect to the specified node, starts the handshake
@@ -69,7 +70,7 @@ namespace Gigamonkey::p2p {
          * Gets the node this connection is attached to.
          * @return Node
          */
-        Node& getNode();
+        Node* getNode();
 
         /**
          * Is this node active.
@@ -77,29 +78,44 @@ namespace Gigamonkey::p2p {
          */
         [[nodiscard]] bool isActive() const { return active;};
 
-    protected:
         /**
-         * Instantiates the appropriate body type as per the header and returns it
-         * @return Instantiated Message body
+         * Is the node in the middle of connecting
+         * @return true of node is connecting false otherwise;
          */
+        [[nodiscard]] bool isConnecting() const { return connecting;};
 
-         messages::MessageBodyPtr makeBody();
+        /**
+         * Gets the queue of messages that are not housekeeping level messages
+         * @return queue of messages
+         */
+        [[nodiscard]] std::queue<messages::Message>& getUndealtMessages() { return undealt_queue;}
+
+        /**
+         * Adds a message to send at the bottom of the queue
+         * @param messageToSend message to send out
+         */
+        void sendMessage(const messages::Message& messageToSend);
+    protected:
+
 
          void sendMessage();
     private:
         boost::asio::io_context & io_context;
         boost::asio::ip::tcp::endpoint m_ep;
         boost::asio::ip::tcp::socket m_sock;
-        Node&  node;
+        Node*  node;
         data::bytes incoming_header{24};
         data::bytes incoming_body;
         messages::Message incoming_message;
         std::queue<messages::Message> incoming_queue;
+        std::queue<messages::Message> undealt_queue;
         std::queue<messages::Message> outgoing_queue;
         int recv_version;
         int send_version;
         bool active = false;
+        bool connecting = true;
 
     };
+
 }
 #endif //GIGAMONKEY_NODE_CONNECTION_H

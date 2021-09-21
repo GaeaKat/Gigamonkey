@@ -14,12 +14,14 @@
 #include <gigamonkey/p2p/messages/reject_message.hpp>
 #include <gigamonkey/p2p/messages/ping_pong_message.hpp>
 #include <gigamonkey/p2p/messages/protoconf_message.hpp>
+#include <gigamonkey/p2p/node.hpp>
+#include <gigamonkey/p2p/messages/address_message.hpp>
 
 
 namespace Gigamonkey::p2p {
 
 
-    NodeConnection::NodeConnection(boost::asio::io_context &ioContext, boost::asio::ip::tcp::endpoint mEp, Node &nod)
+    NodeConnection::NodeConnection(boost::asio::io_context &ioContext, boost::asio::ip::tcp::endpoint mEp, Node* nod)
             : io_context(ioContext), m_ep(std::move(mEp)), m_sock(io_context), node(nod), incoming_message(){
         recv_version = 209;
         send_version = 70015;
@@ -32,6 +34,7 @@ namespace Gigamonkey::p2p {
             DATA_LOG_CHANNEL("network",error) << "Failed to open the socket! Error code = "
                                                  << ec.value() << ". Message: " << ec.message();
             active=false;
+            connecting=true;
             connected(ec);
             return;
         }
@@ -46,17 +49,18 @@ namespace Gigamonkey::p2p {
                     << "Failed to connect to " << m_ep <<"! Error code = "
                     << ec.value() << ". Message: " << ec.message();
             active=false;
+            connecting=false;
             connected(ec);
             return;
         }
         DATA_LOG_CHANNEL("network",normal) << "Connected to " << m_ep << " successfully";
         connected(ec);
-        messages::VersionMessagePtr outgoingVersion=boost::make_shared<messages::VersionMessage>((node.getParams()));
+        messages::VersionMessagePtr outgoingVersion=boost::make_shared<messages::VersionMessage>((node->getParams()));
         outgoingVersion->setProtocolVersion(send_version);
         std::time_t result = std::time(nullptr);
         outgoingVersion->setTimestamp(result);
         outgoingVersion->setUserAgent("Cosmos Wallet");
-        messages::MessageHeadPtr header=boost::make_shared<messages::MessageHeader>((node.getParams()));
+        messages::MessageHeadPtr header=boost::make_shared<messages::MessageHeader>((node->getParams()));
         header->setCommandName("version");
         messages::Message message(header, outgoingVersion);
         message.buildMessage();
@@ -69,7 +73,7 @@ namespace Gigamonkey::p2p {
     }
 
 
-    Node &NodeConnection::getNode() {
+    Node* NodeConnection::getNode() {
         return node;
     }
 
@@ -81,11 +85,12 @@ namespace Gigamonkey::p2p {
                     << "Failed to recieve version header! Error code = "
                     << ec.value() << ". Message: " << ec.message();
             active=false;
+            connecting=false;
             return;
         }
 
 
-        incoming_message = messages::Message(boost::make_shared<messages::MessageHeader>(incoming_header, (node.getParams())), boost::make_shared<messages::EmptyBody>(node.getParams()));
+        incoming_message = messages::Message(boost::make_shared<messages::MessageHeader>(incoming_header, (node->getParams())), boost::make_shared<messages::EmptyBody>(node->getParams()));
         incoming_body = data::bytes(incoming_message.getHeader()->getPayloadSize());
         boost::asio::async_read(m_sock, boost::asio::mutable_buffer(incoming_body.data(),
                                                                     incoming_body.size()),
@@ -97,15 +102,13 @@ namespace Gigamonkey::p2p {
 
     void NodeConnection::body_handler(const boost::system::error_code &ec) {
         if (!ec.failed()) {
-            messages::MessageBodyPtr message=makeBody();
-            incoming_message.setBody(message);
+            messages::MessageBodyPtr message=incoming_message.makeBody(incoming_body,node->getParams());
             if(incoming_message.getBody()) {
+
                 DATA_LOG_CHANNEL("network",normal) << "Recieved: " << *(incoming_message.getBody());
             }
             incoming_queue.emplace(incoming_message);
             //todo: temp
-            handler_loop();
-            sendMessage();
             network_loop();
 
         }
@@ -114,34 +117,7 @@ namespace Gigamonkey::p2p {
                     << "Failed to recieve version body! Error code = "
                     << ec.value() << ". Message: " << ec.message();
             active=false;
-        }
-    }
-
-    messages::MessageBodyPtr  NodeConnection::makeBody() {
-        std::string messageType=incoming_message.getHeader()->getCommandName();
-        if(messageType == "reject")
-        {
-            return  boost::make_shared<messages::RejectMessage>(incoming_body,node.getParams());
-        }
-        else if(messageType == "version")
-        {
-            return  boost::make_shared<messages::VersionMessage>(incoming_body,node.getParams());
-        }
-        else if(messageType == "verack") {
-            return boost::make_shared<messages::EmptyBody>(node.getParams(),"verack");
-        }
-        else if(messageType == "ping") {
-            return boost::make_shared<messages::PingPongMessage>(incoming_body,node.getParams(),true);
-        }
-        else if(messageType == "pong") {
-            return boost::make_shared<messages::PingPongMessage>(incoming_body,node.getParams(),false);
-        }
-        else if(messageType == "protoconf") {
-            return boost::make_shared<messages::ProtoconfMessage>(incoming_body,node.getParams());
-        }
-        else {
-            DATA_LOG_CHANNEL("network",error) << "Recieved unknown message: " << messageType;
-            return boost::make_shared<messages::EmptyBody>(node.getParams());
+            connecting=false;
         }
     }
 
@@ -181,31 +157,37 @@ namespace Gigamonkey::p2p {
             incoming_queue.pop();
             if(msg.getHeader()->getCommandName()== "version") {
                 messages::Message verack;
-                boost::shared_ptr<messages::EmptyBody> verackBody=boost::make_shared<messages::EmptyBody>(node.getParams(),"verack");
-                verack.setHeader(boost::make_shared<messages::MessageHeader>(node.getParams()));
+                boost::shared_ptr<messages::EmptyBody> verackBody=boost::make_shared<messages::EmptyBody>(node->getParams(),"verack");
+                verack.setHeader(boost::make_shared<messages::MessageHeader>(node->getParams()));
                 verack.setBody(verackBody);
                 verack.buildMessage();
                 outgoing_queue.push(verack);
                 active= true;
-            }
-
-            if(msg.getHeader()->getCommandName() == "ping") {
+                connecting=false;
+            } else if(msg.getHeader()->getCommandName() == "ping") {
                 messages::PingPongMessagePtr pingBody=boost::dynamic_pointer_cast<messages::PingPongMessage>(msg.getBody());
                 messages::Message pong;
-                messages::PingPongMessagePtr pongBody=boost::make_shared<messages::PingPongMessage>(node.getParams(),false);
+                messages::PingPongMessagePtr pongBody=boost::make_shared<messages::PingPongMessage>(node->getParams(),false);
                 pongBody->setNonce(pingBody->getNonce());
-                pong.setHeader(boost::make_shared<messages::MessageHeader>(node.getParams()));
+                pong.setHeader(boost::make_shared<messages::MessageHeader>(node->getParams()));
                 pong.setBody(pongBody);
 
                 pong.buildMessage();
 
                 outgoing_queue.push(pong);
-            }
-            if(msg.getHeader()->getCommandName() == "protoconf") {
+            } else if(msg.getHeader()->getCommandName() == "protoconf") {
                 messages::ProtoconfMessagePtr  protoconfBody=boost::dynamic_pointer_cast<messages::ProtoconfMessage>(msg.getBody());
                 DATA_LOG_CHANNEL("network",normal) << "Recived protoconf: " << *protoconfBody;
             }
+            else {
+                undealt_queue.push(msg);
+            }
         }
+        sendMessage();
 
+    }
+
+    void NodeConnection::sendMessage(const messages::Message& messageToSend) {
+        outgoing_queue.push(messageToSend);
     }
 }

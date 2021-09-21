@@ -31,11 +31,8 @@ namespace Gigamonkey::p2p {
         auto output=node.QuerySeeds();
         if(output.size()>0) {
             std::cout << output[0] << std::endl;
-            boost::asio::io_context io_context;
-            NodeConnection test(io_context, boost::asio::ip::tcp::endpoint(output[0], network.port()), node);
-            test.connect([](boost::system::error_code ec) { tmp(ec); });
-
-            io_context.run();
+            node.connect(output[0]);
+            node.run();
         }
     }
 }

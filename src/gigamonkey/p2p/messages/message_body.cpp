@@ -48,4 +48,5 @@ namespace Gigamonkey::p2p::messages {
     std::string EmptyBody::getCommandName() {
         return name;
     }
+
 }
