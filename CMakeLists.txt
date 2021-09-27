@@ -89,6 +89,11 @@ if(CRYPTOPP_INCLUDE_DIRS)
 	include_directories(${CRYPTOPP_INCLUDE_DIRS})
 endif()
 
+find_package(Unbound REQUIRED)
+if(UNBOUND_INCLUDE_DIR)
+	message(STATUS "Unbound INCLUDE Dirs: ${UNBOUND_INCLUDE_DIR}")
+	include_directories(${UNBOUND_INCLUDE_DIR})
+endif()
 # Check data library
 if(NOT EXISTS "${PROJECT_SOURCE_DIR}/extern/data/CMakeLists.txt")
     message(FATAL_ERROR "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
@@ -164,9 +169,11 @@ add_library(gigamonkey STATIC
     src/gigamonkey/boost/boost.cpp
     src/gigamonkey/mapi/mapi.cpp
     src/gigamonkey/mapi/envelope.cpp
+	src/gigamonkey/paymail/paymail.cpp
+	src/gigamonkey/paymail/capability.cpp
 )
 
-target_link_libraries(gigamonkey PUBLIC data util ${OPENSSL_LIBRARIES} ${CRYPTOPP_LIBRARIES} ${Boost_LIBRARIES} ${GMPXX_LIBRARY} ${GMP_LIBRARY} nlohmann_json::nlohmann_json )
+target_link_libraries(gigamonkey PUBLIC data util ${OPENSSL_LIBRARIES} ${UNBOUND_LIBRARIES} ${CRYPTOPP_LIBRARIES} ${Boost_LIBRARIES} ${GMPXX_LIBRARY} ${GMP_LIBRARY} nlohmann_json::nlohmann_json )
 
 target_include_directories(gigamonkey PUBLIC include)
 
